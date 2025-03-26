@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up Form</title>
+  <script charset="utf-8" type="text/javascript" src="//js-eu1.hsforms.net/forms/embed/v2.js"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB6Ty5ZHqoSA2jlyqnyi1c7HqLp6G8Ij7I&libraries=places"></script>
+  <style>
+    body {
+      background-color: transparent;
+      font-family: Arial, sans-serif;
+    }
+    .form-container {
+      max-width: 100%;
+      width: 90%;
+      margin: 0 auto;
+      text-align: center;
+      border-radius: 0;
+    }
+    h2 {
+      color: #A33323;
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+    .form-container input {
+      width: 100%;
+      max-width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #CCC;
+      font-size: 16px;
+      font-weight: bold;
+      color: #888;
+      box-sizing: border-box;
+      border-radius: 0;
+      text-transform: uppercase;
+    }
+    .form-container input::placeholder {
+      color: #999;
+    }
+    .form-container button {
+      width: 80%;
+      padding: 15px;
+      background-color: #D14A3B;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: 0.3s;
+      border-radius: 25px;
+    }
+    .form-container button:hover {
+      background-color: #B83E32;
+    }
+    .form-text {
+      font-size: 10px;
+      color: #333;
+      margin-top: 15px;
+    }
+    @media (max-width: 600px) {
+      .form-container {
+        width: 95%;
+      }
+      .form-container input {
+        padding: 10px;
+        font-size: 14px;
+      }
+      .form-container button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Lorem ipsum dolor sit amet</h2>
+    <form id="custom_form">
+      <input type="text" id="firstname" name="firstname" placeholder="First Name" required>
+      <input type="text" id="lastname" name="lastname" placeholder="Last Name" required>
+      <input type="email" id="email" name="email" placeholder="Your Email" required>
+      <input type="text" id="nearest_city" name="nearest_city" placeholder="Nearest City" required autocomplete="off">
+      <input type="hidden" id="guild_address_city" name="guild_address_city">
+      <input type="hidden" id="guild_address_state" name="guild_address_state">
+      <input type="hidden" id="guild_address_country" name="guild_address_country">
+      <input type="hidden" id="ip_address" name="ip_address">
+      <p class="form-text">Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
+      <button type="submit">Join</button>
+    </form>
+  </div>
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('https://api64.ipify.org?format=json')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("ip_address").value = data.ip;
+        })
+        .catch(error => {
+          console.error('Error fetching IP address:', error);
+        });
+
+      var input = document.getElementById('nearest_city');
+      if (input) {
+        var autocomplete = new google.maps.places.Autocomplete(input, {
+          types: ['(cities)'],
+          componentRestrictions: { country: 'GB' }
+        });
+
+        autocomplete.addListener('place_changed', function() {
+          var place = autocomplete.getPlace();
+          if (!place.geometry) {
+            alert("Please select a valid city from the suggestions.");
+            input.value = "";
+            return;
+          }
+
+          let city = "", state = "", country = "";
+          place.address_components.forEach(component => {
+            if (component.types.includes("locality")) {
+              city = component.long_name;
+            }
+            if (component.types.includes("administrative_area_level_1")) {
+              state = component.long_name;
+            }
+            if (component.types.includes("country")) {
+              country = component.long_name;
+            }
+          });
+
+          document.getElementById("guild_address_city").value = city;
+          document.getElementById("guild_address_state").value = state;
+          document.getElementById("guild_address_country").value = country;
+        });
+      }
+
+      document.querySelectorAll("input[type=text]").forEach(input => {
+        input.addEventListener("input", function() {
+          this.value = this.value.toUpperCase();
+        });
+      });
+
+      document.getElementById("custom_form").addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        var formData = {
+          fields: [
+            { name: "firstname", value: document.getElementById("firstname").value },
+            { name: "lastname", value: document.getElementById("lastname").value },
+            { name: "email", value: document.getElementById("email").value },
+            { name: "guild_address_city", value: document.getElementById("guild_address_city").value },
+            { name: "guild_address_state", value: document.getElementById("guild_address_state").value },
+            { name: "guild_address_country", value: document.getElementById("guild_address_country").value },
+            { name: "ip_address", value: document.getElementById("ip_address").value }
+          ]
+        };
+
+        fetch("https://api.hsforms.com/submissions/v3/integration/submit/26694128/92a2367e-d779-46e3-b30c-ddbd301363b0", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'error') {
+            console.error("HubSpot error:", data.message);
+            alert("There was an error submitting the form. Please try again later.");
+          } else {
+            alert("Form submitted successfully!");
+            document.getElementById("custom_form").reset();
+          }
+        })
+        .catch(error => {
+          console.error("Error submitting form:", error);
+          alert("There was an error submitting the form. Please try again later.");
+        });
+      });
+    });
+  </script>
+</body> 
+</html>
